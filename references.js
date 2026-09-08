@@ -1,0 +1,57 @@
+// References are selected per question, not merely copied from the topic.
+function scReferences(domain, start, keys) {
+  keys.split(' ').forEach((key, offset) => {
+    const id = domain + '-' + String(start + offset).padStart(3,'0');
+    SC.bank.find(q => q.id === id).sources = key.split('+');
+  });
+}
+scReferences('env',1,'roles roles roles run playbooks run roles audit group logapi');
+scReferences('env',11,'advanced tamper edr edr advanced group group deception deception troubleshootmac');
+scReferences('env',21,'hash hash indicators hash indicators network network indicators tune indicators');
+scReferences('env',31,'asr asr asrref asrref edr asr asr asr asr asr+detection');
+scReferences('env',41,'disruption disruptconfig disruption disruptconfig disruptconfig air air+mdoair zap actioncenter disruptconfig');
+scReferences('env',51,'notify notify incidentnotify threatanalytics tune tune responsemail cloudsuppress cloudsuppress tune');
+scReferences('env',61,'playbooks playbooks autorules playbooks playbooks playbooks playbooks playbooks run autorules');
+scReferences('env',71,'autorules autorules createauto createauto createauto createauto autorules autorules cloudworkflow autorules');
+scReferences('env',81,'dcr dcr ama ama ama windows wef ama+wef windows dcr');
+scReferences('env',91,'syslog syslog syslog syslog syslog syslog syslog syslog syslog asim');
+scReferences('env',101,'policy policy policy policy diagnostics diagnostics diagnostics graphlogs diagnostics diagnostics');
+scReferences('env',111,'ccf ccf logapi logapi logapi logapi logapi custom custom transform');
+scReferences('env',121,'xdrconnect xdrconnect xdrconnect xdrconnect xdrconnect xdrconnect content content mdecustom mdecustom');
+scReferences('env',131,'retention retention lake lake xdrconnect costs plans summary retention costs');
+scReferences('env',141,'workbooks workbooks workbooks workbooks render metrics optimize health health optimize');
+scReferences('env',151,'ti taxii taxii tiu ti ti ti timedetect timedetect ti');
+scReferences('env',161,'scheduled scheduled scheduled scheduled scheduled entity scheduled scheduled scheduled entity');
+scReferences('env',171,'nrt nrt nrt nrt rules rules anomalies anomalies scheduled autorules');
+scReferences('env',181,'detection detection detection detection detection detection detection detection detection detection');
+scReferences('env',191,'entity entity ueba ueba ueba ueba mitre mitre anomalies entity');
+scReferences('env',201,'safelinks attachments filepolicy session discovery irm dlpconcept irmtemplates advanced content');
+scReferences('response',1,'incidents incidents incidents incidents tune tune tune tune incidents incidents');
+scReferences('response',11,'auditazure graph sentinelincident sentinelincident sentinelincident sentinelincident graph sentinelincident playbooks graph');
+scReferences('response',21,'incidents cases cases exposure incidents incidents cases incidents incidents roles');
+scReferences('response',31,'device incidents schema device device file best device schema actions');
+scReferences('response',41,'actions actions actions actions actions live disruptconfig identity+revoke actions disruptconfig');
+scReferences('response',51,'file hash fileactions fileactions file hash fileactions file file file');
+scReferences('response',61,'live commands commands live live live live live live live');
+scReferences('response',71,'actions actions actions device+actions actioncenter actioncenter actioncenter actioncenter actioncenter actioncenter');
+scReferences('response',81,'identity reports reports disruptconfig schema deception+identity identity+revoke identity reports disruptconfig');
+scReferences('response',91,'risk risk risk riskremediate riskremediate revoke revoke revoke riskremediate risk');
+scReferences('response',101,'explorer schema schema schema explorer schema explorer schema schema best');
+scReferences('response',111,'remediateemail remediateemail remediateemail submissions submissions hash remediateemail zap actioncenter revoke');
+scReferences('response',121,'mdca oauth oauth discovery filepolicy session mdca discovery schema mdca');
+scReferences('response',131,'irmtemplates irmtemplates irm dlpconcept dlp irminvestigate irminvestigate dlp ediscovery identity');
+scReferences('response',141,'cloudalerts cloudalerts cloudsuppress cloudsuppress cloudworkflow diagnostics xdrconnect cloudalerts cloudalerts cloudalerts');
+scReferences('response',151,'audit ediscovery audittypes xdraudit audittypes audit audit audittypes audit audit');
+scReferences('response',161,'ediscovery cs007 ediscovery audit ediscovery cs007 ediscovery ediscovery cs007 ediscovery');
+scReferences('response',171,'graphlogs graphlogs graphtable graphtable graphtable graphlogs graphtable graphlogs graphtable graphlogs');
+scReferences('response',181,'copilot copilot copilot copilot copilot copilot copilot copilot copilot copilot');
+scReferences('hunt',1,'project extend strings strings strings strings strings render kql project');
+scReferences('hunt',11,'argmax summarize summarize kql kql kql time time argmax summarize');
+scReferences('hunt',21,'schema join join join kql best best join kqlbest kqlbest');
+scReferences('hunt',31,'dynamic dynamic schema dynamic schema schema kqlbest kql schema kqlbest');
+scReferences('hunt',41,'schema schema schema schema schema schema schema schema schema schema');
+scReferences('hunt',51,'schema best best summarize troubleshootmac troubleshootmac argmax schema summarize best');
+scReferences('hunt',61,'auditazure auditazure auditazure auditazure auditazure health costs health costs graphlogs');
+scReferences('hunt',71,'bookmarks watchlists watchlists asim asim asimmanage asimmanage threatanalytics sentinelhunt sentinelhunt');
+scReferences('hunt',81,'jobs jobs jobs jobs jobs summary summary summary jobs jobs');
+scReferences('hunt',91,'exposure exposure exposure exposure notebook notebook mcp mcp mcp mcp');

@@ -1,6 +1,6 @@
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const SC = require('../core');require('../sources');require('../environment');require('../response');require('../hunting');
+const SC = require('../core');require('../sources');require('../environment');require('../response');require('../hunting');require('../references');
 
 test('500 preguntas únicas, 50 grupos y distribución 210/190/100',()=>{
   assert.equal(SC.bank.length,500);assert.equal(SC.groups.length,50);
