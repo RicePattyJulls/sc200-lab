@@ -25,6 +25,32 @@ with sync_playwright() as p:
     page.screenshot(path=str(OUT/'desktop-home.png'), full_page=True)
     assert page.evaluate('SC.bank.length') == 500
 
+    # An old session keeps its original question, not the replacement graph item.
+    legacy_context = browser.new_context()
+    legacy = legacy_context.new_page()
+    legacy.on('pageerror', lambda error: errors.append(str(error)))
+    navigate(legacy, '')
+    legacy.evaluate("""() => {
+      const q=SC.bank.find(q=>q.id==='hunt-067');
+      const raw=SC.blank(); delete raw.bankRevision;
+      raw.active=SC.session('study',[q],1); delete raw.active.bankRevision;
+      raw.active.answers[q.id]=[0];
+      raw.stats[q.id]={seen:1,right:1,lastCorrect:true};
+      localStorage.setItem('sc200lab:v1',JSON.stringify(raw));
+    }""")
+    legacy.reload()
+    legacy.wait_for_load_state('networkidle')
+    navigate(legacy, '#quiz')
+    expect(legacy.locator('.question')).to_contain_text('consumo de ingesta')
+    legacy.locator('[data-action=check]').click()
+    expect(legacy.locator('.feedback')).to_contain_text('Usage')
+    assert stored(legacy)['bankRevision'] == 2
+    assert 'hunt-067' not in stored(legacy)['stats']
+    navigate(legacy, '#bank')
+    legacy.locator('#search').fill('hunt-067')
+    expect(legacy.locator('.bank-item')).to_contain_text('dispositivo origen')
+    legacy_context.close()
+
     # A focused practice with both single and multiple answer questions.
     navigate(page, '#study/env')
     page.locator('#topic').select_option('Roles y alcance')

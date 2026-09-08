@@ -2,6 +2,36 @@ const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const SC = require('../core');require('../sources');require('../environment');require('../response');require('../hunting');require('../references');
 
+test('sesiones antiguas conservan preguntas y notas sin atribuir dominio a reemplazos',()=>{
+  const q=SC.bank.find(q=>q.id==='hunt-067'), old=SC.previousQuestions[q.id];
+  const raw=SC.blank();delete raw.bankRevision;
+  raw.active=SC.session('study',[q],1);delete raw.active.bankRevision;
+  raw.active.answers[q.id]=[...old.correct];
+  raw.stats[q.id]={seen:1,right:1,lastCorrect:true};raw.bookmarks=[q.id,'hunt-001'];
+  const clean=SC.validate(JSON.parse(JSON.stringify(raw)));
+  assert.equal(SC.questionFor(clean.active,q.id).prompt,old.prompt);
+  assert.match(SC.questionFor(clean.active,q.id).prompt,/consumo de ingesta/);
+  assert.equal(SC.result(clean.active).percent,100);
+  assert.equal(clean.stats[q.id],undefined);
+  assert.deepEqual(clean.bookmarks,['hunt-001']);
+  SC.finish(clean);assert.equal(clean.history.length,1);assert.equal(clean.stats[q.id],undefined);
+  assert.equal(SC.result(SC.validate(clean).history[0]).percent,100);
+  const fresh=SC.session('study',[q],1);
+  assert.match(SC.questionFor(fresh,q.id).prompt,/dispositivo origen/);
+});
+
+test('la revisión mantiene KQL y referencias específicas de MDI y grafos',()=>{
+  assert.equal(SC.bank.filter(q=>q.code).length,20);
+  for(const id of ['env-042','response-084'])assert.deepEqual(SC.bank.find(q=>q.id===id).sources,['mdiactions']);
+  assert.match(SC.bank.find(q=>q.id==='env-042').prompt,/v3.x/);
+  assert.match(SC.bank.find(q=>q.id==='response-084').prompt,/v2.x/);
+  assert.equal(SC.bank.filter(q=>q.sources.includes('huntinggraph')).length,6);
+  assert.equal(SC.bank.filter(q=>q.domain==='hunt'&&q.sources.includes('incidents')).length,4);
+  assert.ok(SC.bank.some(q=>q.sources.includes('sentinelgraph')));
+  assert.ok(SC.bank.some(q=>q.sources.includes('graphvisual')));
+  const raw=SC.blank();raw.bankRevision=999;assert.throws(()=>SC.validate(raw));
+});
+
 test('500 preguntas únicas, 50 grupos y distribución 210/190/100',()=>{
   assert.equal(SC.bank.length,500);assert.equal(SC.groups.length,50);
   assert.equal(new Set(SC.bank.map(q=>q.id)).size,500);assert.equal(new Set(SC.bank.map(q=>q.prompt)).size,500);

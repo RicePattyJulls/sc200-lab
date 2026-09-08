@@ -57,6 +57,55 @@ No es un laboratorio conectado a un tenant: los ejercicios KQL son de lectura y 
 
 ## Verificación técnica
 
+### Revisión del feedback — 8 de septiembre de 2026
+
+Conclusión: se aceptan los ajustes de precisión y equilibrio, no la exclusión automática de temas que no aparecen literalmente en un objetivo. La guía permite temas relacionados. La distribución por subtema es una decisión editorial, no un peso publicado por Microsoft.
+
+- `MDI`: se delimita v3.x con `LocalSystem` y v2.x con una gMSA opcional. [Action accounts](https://learn.microsoft.com/en-us/defender-for-identity/deploy/manage-action-accounts).
+- Hunting: cinco preguntas de operación pasan a gestión del entorno; se conservan auditoría KQL, un bookmark, una watchlist y una pregunta ASIM. Se refuerzan escenarios y requisitos de [hunting graph](https://learn.microsoft.com/en-us/defender-xdr/advanced-hunting-graph), alcance potencial de [blast radius](https://learn.microsoft.com/en-us/defender-xdr/investigate-incidents#blast-radius) y [Sentinel graph](https://learn.microsoft.com/en-us/azure/sentinel/datalake/sentinel-graph-overview).
+- Indicadores: siete preguntas MDE/excepciones permanecen en el grupo; tres se sustituyen por rutas TI de Sentinel. El grupo dedicado de diez preguntas TI permanece intacto. No se declara que los indicadores MDE estén fuera del examen.
+- Configuración de workloads: ocho preguntas se sustituyen por operación, identificadores de acciones y requisitos de recopilación; los escenarios de investigación/remediación de MDO, MDCA y Purview permanecen en respuesta.
+- APIs: se sustituyen paginación y DCE por requisitos de custom tables; se conservan CCF, Logs Ingestion API y DCR.
+- `AIR`: el aviso sobre retirada del inicio manual no demuestra que también desaparezca la acción automática de una custom detection. No se plantea esa supuesta contradicción como hecho ni se retira AIR del temario. [Aviso de MDE](https://learn.microsoft.com/en-us/defender-endpoint/automated-investigations), [acciones de custom detections](https://learn.microsoft.com/en-us/defender-xdr/custom-detection-rules).
+- `Blast radius`: no se introduce una pregunta de «siete saltos»; la página también enumera límites por entorno. Se evalúan los límites del modelo, la frescura y el alcance RBAC.
+
+### Registro puntual de cambios
+
+26 preguntas revisadas o sustituidas; total del banco sin cambios:
+
+- `env-042`: sensores MDI v3.x y LocalSystem.
+- `response-084`: error de permisos con sensores v2.x y gMSA explícita.
+- `env-025`: ingesta TI mediante TAXII.
+- `env-026`: Threat Intelligence Upload API.
+- `env-028`: ingesta TI no equivale a bloqueo en endpoints.
+- `env-112`: sufijo `_CL` al crear custom tables.
+- `env-116`: columna `TimeGenerated` y transformación.
+- `env-201`: LAQueryLogs, trasladada desde `hunt-065`.
+- `env-202`: SentinelAudit, trasladada desde `hunt-066`.
+- `env-203`: Usage, trasladada desde `hunt-067`.
+- `env-204`: Heartbeat, trasladada desde `hunt-068`.
+- `env-205`: _BilledSize, trasladada desde `hunt-069`.
+- `env-206`: SID para Disable user de AD local.
+- `env-207`: AccountObjectId para acciones sobre identidades Entra.
+- `env-208`: dynamic tags y ejecución previa de Asset Rule Management.
+- `hunt-065`: Attack paths to critical asset.
+- `hunt-066`: Entity relationship map.
+- `hunt-067`: Paths between two entities.
+- `hunt-068`: requisitos de acceso a hunting graph.
+- `hunt-069`: escenario, filtros y Run scenario.
+- `hunt-073`: Access to key vaults.
+- `hunt-075`: blast radius como propagación potencial, no confirmada.
+- `hunt-076`: alcance RBAC del blast radius.
+- `hunt-077`: límites de visibilidad y del modelo.
+- `hunt-091`: concepto y utilidad de Microsoft Sentinel graph.
+- `hunt-093`: Explore connected assets en custom graphs (preview).
+
+Además: `hunt-094` enlaza ahora la documentación de blast radius; `env-077` conserva la corrección terminológica a `temporary automation rule`.
+
+Compatibilidad: las sesiones anteriores conservan el texto y la puntuación originales de las preguntas cambiadas. Su dominio y marcadores no se transfieren a preguntas sustituidas; los resultados históricos se conservan. Las nuevas prácticas usan la revisión actual.
+
+### Pruebas
+
 - 500 IDs y enunciados distintos; reparto 210/190/100; 50 temas.
 - Generación de 100 simulacros de prueba: 50 preguntas sin repetición interna y reparto 21/19/10.
 - Puntuación exacta en selección múltiple; prevención del doble conteo; validación de copias JSON.

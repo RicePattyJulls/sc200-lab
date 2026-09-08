@@ -1,4 +1,8 @@
 SC.sources = {
+ sentinelgraph: 'azure/sentinel/datalake/sentinel-graph-overview',
+ graphvisual: 'azure/sentinel/datalake/graph-visualization',
+ mdiactions: 'defender-for-identity/deploy/manage-action-accounts',
+ huntinggraph: 'defender-xdr/advanced-hunting-graph',
  guide: 'credentials/certifications/resources/study-guides/sc-200',
  roles: 'azure/sentinel/roles',
  playbooks: 'azure/sentinel/automation/automate-responses-with-playbooks',
@@ -39,7 +43,7 @@ SC.sources = {
  transform: 'azure/sentinel/data-transformation',
  ccf: 'azure/sentinel/create-codeless-connector',
  content: 'azure/sentinel/sentinel-solutions-deploy',
- mdecustom: 'defender-endpoint/custom-data-collection',
+ mdecustom: 'defender-endpoint/create-custom-data-collection-rules',
  retention: 'azure/azure-monitor/logs/data-retention-configure',
  plans: 'azure/azure-monitor/logs/data-platform-logs',
  lake: 'azure/sentinel/datalake/sentinel-lake-overview',
