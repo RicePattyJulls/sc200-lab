@@ -23,9 +23,9 @@ Los pesos elegidos están dentro de los intervalos 40–45%, 35–40% y 20–25%
 | Área de objetivos | Temas del banco | Apuntes relacionados |
 | --- | --- | --- |
 | Automatización y entorno Defender | Notificaciones, tuning, device groups, indicadores, ASR, disrupción, AIR, workflows | 1, 2, 3, 7, 12 |
-| Configuración de Sentinel | Roles, workbooks, retención, capas de datos, costos, salud y optimización | 2, 5, 10, 12 |
+| Configuración de Sentinel | Roles, workbooks, retención, data tiers, costos, salud y optimización | 2, 5, 10, 12 |
 | Ingesta | AMA, DCR/DCRA, Windows, WEF, Syslog/CEF, Azure Policy, diagnostic settings, APIs, tablas propias, Custom Data Collection | 4, 13 |
-| Detecciones | Scheduled, NRT, custom detections, acciones, mapeo de entidades, anomalías, UEBA y MITRE | 6, 7, 8 |
+| Detecciones | Scheduled, NRT, custom detections, acciones, entity mapping, anomalías, UEBA y MITRE | 6, 7, 8 |
 | Investigación XDR y Sentinel | Triage, alertas/evidencias, correlación, casos, productos de seguridad y Copilot | 8, 9 |
 | Investigación y respuesta MDE | Timeline, archivos, entidades, aislamiento, contención, Live response y paquetes | 9, 11 |
 | Actividad Microsoft 365 | Audit, eDiscovery, Graph activity logs, correo y Purview | 3, 9, 11, 13 |
