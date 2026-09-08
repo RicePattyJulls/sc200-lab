@@ -1,0 +1,12 @@
+{
+  "name": "sc200-lab",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Simulacro independiente SC-200: 500 preguntas originales, sin dependencias en tiempo de ejecución.",
+  "scripts": {
+    "test": "node --test tests/core.test.js",
+    "serve": "python3 -m http.server 4173 --bind 127.0.0.1",
+    "coverage": "node tests/coverage.js",
+    "check:sources": "python3 tests/check_sources.py"
+  }
+}
