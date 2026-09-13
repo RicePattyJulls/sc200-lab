@@ -2,6 +2,10 @@
 
 Fecha de revisión: 8 de septiembre de 2026. Banco independiente de práctica, no material oficial ni garantía de cobertura exhaustiva.
 
+Revisión 3: banco revisado contra `SC-200.md` corregido; 3 correcciones y 12 sustituciones por cobertura, conservando 500 preguntas, 50 grupos y el reparto 210/190/100.
+
+Revisión 4: el separador de respuestas múltiples pasa de `~` a `§`, para que los operadores `KQL` `=~` e `in~` puedan aparecer en una respuesta sin partirla. Corrige `hunt-004`, `hunt-007` y `hunt-052`.
+
 ## Base
 
 Se revisaron los capítulos de los apuntes SC-200 sobre recorridos, licencias y onboarding, permisos, protección, ingesta, almacenamiento, inteligencia, detección, correlación, investigación, hunting, respuesta, automatización y tablas/KQL, incluido su apéndice SOC. Se seleccionaron los conceptos pertinentes para la [guía oficial de SC-200, objetivos del 28 de julio de 2026](https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/sc-200).

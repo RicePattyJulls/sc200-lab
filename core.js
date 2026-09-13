@@ -3,13 +3,19 @@
   const bank = [], groups = [];
   const domains = {env: 'Gestión del entorno SecOps', response: 'Respuesta a incidentes', hunt: 'Threat hunting'};
   const weights = {env: 21, response: 19, hunt: 10};
-  const bankRevision = 2;
-  // Historical sessions retain the wording and answers originally presented.
+  const bankRevision = 4;
+  // Each archived original has a revision cutoff, so revision 2 sessions do not revert to revision 1.
+  // Any revision ever published is valid; only a future revision is rejected.
+  const knownRevision = v => Number.isInteger(v) && v >= 1 && v <= bankRevision;
+  function previousQuestion(s, id) {
+    const changedAt = root.SC.previousQuestionRevisions?.[id] || 2;
+    return (s.bankRevision || 1) < changedAt ? root.SC.previousQuestions?.[id] : undefined;
+  }
   function questionFor(s, id) {
-    return ((s.bankRevision || 1) < bankRevision && root.SC.previousQuestions?.[id]) || bank.find(q => q.id === id);
+    return previousQuestion(s, id) || bank.find(q => q.id === id);
   }
   // Compact authoring format: prompt | correct answer(s) | distractors | explanation.
-  // Multiple correct answers are separated by ~; displayed options are always shuffled.
+  // Multiple correct answers are separated by §; displayed options are always shuffled.
   function add(domain, topic, chapter, sources, rows) {
     const group = {domain, topic, chapter, sources, count: rows.length};
     groups.push(group);
@@ -17,7 +23,7 @@
       const fields = row.split('¦');
       if (fields.length !== 6) throw Error('Invalid question: ' + row);
       const [prompt, right, a, b, c, explanation] = fields;
-      const good = right.split('~');
+      const good = right.split('§');
       const choices = [...good, a, b, c].filter(Boolean);
       bank.push({id: domain + '-' + String(bank.filter(q => q.domain === domain).length + 1).padStart(3, '0'), domain, topic, chapter, sources, prompt, choices, correct: good.map((_, i) => i), explanation});
     });
@@ -46,7 +52,7 @@
   }
   function record(state, s, id) {
     if (s.checked.includes(id)) return;
-    if ((s.bankRevision || 1) < bankRevision && root.SC.previousQuestions?.[id]) {s.checked.push(id); return;}
+    if (previousQuestion(s, id)) {s.checked.push(id); return;}
     const q = bank.find(q => q.id === id), old = state.stats[id] || {seen: 0, right: 0};
     const good = correct(q, s.answers[id]);
     state.stats[id] = {seen: old.seen + 1, right: old.right + +good, lastCorrect: good};
@@ -66,7 +72,7 @@
     const list = (v, allowed = ids) => Array.isArray(v) && new Set(v).size === v.length && v.every(x => allowed.has(x));
     const nat = n => Number.isSafeInteger(n) && n >= 0 && n < 1e9;
     const validSession = s => {
-      if (s && s.bankRevision !== undefined && ![1, bankRevision].includes(s.bankRevision)) return false;
+      if (s && s.bankRevision !== undefined && !knownRevision(s.bankRevision)) return false;
       if (!s || typeof s.id !== 'string' || s.id.length > 100 || !['exam','study','errors','bookmarks'].includes(s.mode) || !list(s.ids) || !s.ids.length || !nat(s.index) || s.index >= s.ids.length || !Number.isFinite(s.started) || !(s.deadline === null || Number.isFinite(s.deadline)) || !(s.finished === null || Number.isFinite(s.finished))) return false;
       if (!list(s.checked, new Set(s.ids)) || !list(s.flagged, new Set(s.ids)) || !s.answers || !s.orders) return false;
       if (s.mode === 'exam' && (!s.deadline || s.ids.length !== 50 || Object.entries(weights).some(([d,n]) => s.ids.filter(id => qs.get(id).domain === d).length !== n))) return false;
@@ -79,11 +85,11 @@
     const clean = blank();
     for (const [id, v] of Object.entries(raw.stats)) {if (!ids.has(id) || !v || !nat(v.seen) || !nat(v.right) || v.right > v.seen || typeof v.lastCorrect !== 'boolean') fail(); clean.stats[id] = {seen:v.seen, right:v.right, lastCorrect:v.lastCorrect};}
     clean.bookmarks = [...raw.bookmarks]; clean.history = raw.history; clean.active = raw.active;
-    if (raw.bankRevision !== undefined && ![1, bankRevision].includes(raw.bankRevision)) fail();
+    if (raw.bankRevision !== undefined && !knownRevision(raw.bankRevision)) fail();
     if ((raw.bankRevision || 1) < bankRevision) {
       // Keep results in history, but do not transfer mastery to replacement questions.
-      for (const id of Object.keys(root.SC.previousQuestions || {})) delete clean.stats[id];
-      clean.bookmarks = clean.bookmarks.filter(id => !root.SC.previousQuestions?.[id]);
+      for (const id of Object.keys(root.SC.previousQuestions || {})) if (previousQuestion(raw, id)) delete clean.stats[id];
+      clean.bookmarks = clean.bookmarks.filter(id => !previousQuestion(raw, id));
     }
     return JSON.parse(JSON.stringify(clean));
   }

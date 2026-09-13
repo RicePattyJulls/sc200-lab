@@ -1,9 +1,14 @@
 """Read-only source/link audit. Cached documentation stays outside the published app."""
-import concurrent.futures, html, json, pathlib, re, subprocess, urllib.request
+import argparse, concurrent.futures, html, json, pathlib, re, subprocess, urllib.request
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--no-cache', action='store_true', help='Check URLs without writing cache files')
+args = parser.parse_args()
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 CACHE = pathlib.Path('/tmp/sc200-learn-cache')
-CACHE.mkdir(exist_ok=True)
+if not args.no_cache:
+    CACHE.mkdir(exist_ok=True)
 sources = json.loads(subprocess.check_output(['node', '-e', "global.SC={};require('./sources.js');process.stdout.write(JSON.stringify(SC.sources))"], cwd=ROOT))
 
 def check(item):
@@ -18,14 +23,17 @@ def check(item):
         body = re.sub(r'<(script|style)\b.*?</\1>', '', body, flags=re.S)
         plain = html.unescape(re.sub('<[^>]+>', ' ', body))
         plain = re.sub(r'\s+', ' ', plain)
-        (CACHE / (key + '.txt')).write_text(plain)
+        if not args.no_cache:
+            (CACHE / (key + '.txt')).write_text(plain)
         return {'key':key, 'url':url, 'final':final, 'ok':True, 'chars':len(plain)}
     except Exception as e:
         return {'key':key, 'url':url, 'ok':False, 'error':str(e)}
 
 with concurrent.futures.ThreadPoolExecutor(max_workers=12) as pool:
     results = list(pool.map(check, sources.items()))
-(CACHE / 'report.json').write_text(json.dumps(results, indent=2))
+if not args.no_cache:
+    (CACHE / 'report.json').write_text(json.dumps(results, indent=2))
 for result in results:
     if not result['ok']: print(json.dumps(result))
-print(f"Verified {sum(r['ok'] for r in results)}/{len(results)} URLs. Report: {CACHE / 'report.json'}")
+destination = 'Cache disabled (--no-cache).' if args.no_cache else f"Report: {CACHE / 'report.json'}"
+print(f"Verified {sum(r['ok'] for r in results)}/{len(results)} URLs. {destination}")
