@@ -1,9 +1,22 @@
 """End-to-end checks against the local static server (Python Playwright)."""
 from pathlib import Path
+import re
 import json
 from playwright.sync_api import sync_playwright, expect
 
 URL = 'http://127.0.0.1:4173/'
+
+def local_only(route):
+    url = route.request.url
+    if url.startswith((URL, 'file:', 'blob:', 'data:')):
+        route.continue_()
+    else:
+        route.abort()
+def local_context(browser, **kwargs):
+    context = browser.new_context(**kwargs)
+    context.route('**/*', local_only)
+    return context
+
 OUT = Path('/tmp/sc200-browser-results')
 OUT.mkdir(exist_ok=True)
 
@@ -16,17 +29,17 @@ def navigate(page, suffix):
 
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=True, executable_path='/usr/bin/chromium', args=['--no-sandbox'])
-    context = browser.new_context(viewport={'width':1440,'height':1000}, accept_downloads=True)
+    context = local_context(browser, viewport={'width':1440,'height':1000}, accept_downloads=True)
     page = context.new_page()
     errors = []
     page.on('pageerror', lambda error: errors.append(str(error)))
     navigate(page, '')
     expect(page.locator('h1')).to_contain_text('Entiende la decisión')
     page.screenshot(path=str(OUT/'desktop-home.png'), full_page=True)
-    assert page.evaluate('SC.bank.length') == 500
+    assert page.evaluate('SC.bank.length') == 563
 
     # An old session keeps its original question, not the replacement graph item.
-    legacy_context = browser.new_context()
+    legacy_context = local_context(browser, )
     legacy = legacy_context.new_page()
     legacy.on('pageerror', lambda error: errors.append(str(error)))
     navigate(legacy, '')
@@ -44,7 +57,7 @@ with sync_playwright() as p:
     expect(legacy.locator('.question')).to_contain_text('consumo de ingesta')
     legacy.locator('[data-action=check]').click()
     expect(legacy.locator('.feedback')).to_contain_text('Usage')
-    assert stored(legacy)['bankRevision'] == 2
+    assert stored(legacy)['bankRevision'] == legacy.evaluate('SC.bankRevision')
     assert 'hunt-067' not in stored(legacy)['stats']
     navigate(legacy, '#bank')
     legacy.locator('#search').fill('hunt-067')
@@ -95,7 +108,7 @@ with sync_playwright() as p:
     backup = OUT/'backup.json'
     download.value.save_as(str(backup))
     expected_state = stored(page)
-    other = browser.new_context(viewport={'width':1280,'height':900})
+    other = local_context(browser, viewport={'width':1280,'height':900})
     second = other.new_page()
     navigate(second, '#settings')
     second.locator('#import-file').set_input_files(str(backup))
@@ -147,7 +160,7 @@ with sync_playwright() as p:
     expect(page.locator('#bank-count')).to_contain_text('página 2')
 
     # Mobile: layout and a complete short-session interaction.
-    mobile = browser.new_context(viewport={'width':390,'height':844}, is_mobile=True, has_touch=True)
+    mobile = local_context(browser, viewport={'width':390,'height':844}, is_mobile=True, has_touch=True)
     phone = mobile.new_page()
     phone.on('pageerror', lambda error: errors.append(str(error)))
     navigate(phone, '#home')
@@ -160,7 +173,7 @@ with sync_playwright() as p:
     assert phone.evaluate('document.documentElement.scrollWidth <= innerWidth')
     phone.screenshot(path=str(OUT/'mobile-quiz.png'), full_page=True)
     navigate(phone, '#coverage')
-    assert phone.locator('.coverage-item').count() == 50
+    assert phone.locator('.coverage-item').count() == 66
     assert phone.evaluate('document.documentElement.scrollWidth <= innerWidth')
 
     # Query exercises show their full code, including during review in the bank.
@@ -171,7 +184,7 @@ with sync_playwright() as p:
     page.screenshot(path=str(OUT/'desktop-kql.png'), full_page=True)
 
     # Storage failure is visible and does not crash the in-memory practice.
-    restricted = browser.new_context()
+    restricted = local_context(browser, )
     no_storage = restricted.new_page()
     no_storage.add_init_script("Storage.prototype.setItem = function(){throw new DOMException('disabled','SecurityError')}")
     navigate(no_storage, '#study')
@@ -180,12 +193,90 @@ with sync_playwright() as p:
     expect(no_storage.locator('.question')).to_be_visible()
 
     # Works directly from disk, without a web server.
-    offline = browser.new_context()
+    offline = local_context(browser, )
     local = offline.new_page()
     local.goto((Path(__file__).resolve().parents[1]/'index.html').as_uri())
     local.wait_for_load_state('networkidle')
     expect(local.locator('h1')).to_contain_text('Entiende la decisión')
-    assert local.evaluate('SC.bank.length') == 500
+    assert local.evaluate('SC.bank.length') == 563
+
+    # New scenarios: explanation per option and source coordinates, never early in exam.
+    fresh_context = local_context(browser, viewport={'width':1280,'height':900})
+    fresh = fresh_context.new_page()
+    fresh.on('pageerror', lambda error: errors.append(str(error)))
+    navigate(fresh, '#study/env')
+    fresh.locator('#topic').select_option('Permisos combinados y scopes')
+    fresh.locator('#count').select_option('10')
+    fresh.locator('[data-action=start-study]').click()
+    ids = stored(fresh)['active']['ids']
+    index = ids.index('env-216')
+    fresh.locator(f'[data-action="jump"][data-index="{index}"]').click()
+    expect(fresh.locator('.option-review')).to_have_count(0)
+    fresh.locator('input[name=answer][value="0"]').check()
+    expect(fresh.locator('[data-action=check]')).to_be_disabled()
+    fresh.locator('input[name=answer][value="1"]').check()
+    fresh.locator('[data-action=check]').click()
+    expect(fresh.locator('.option-reasons li')).to_have_count(4)
+    expect(fresh.locator('.note-sources')).to_contain_text('SC-200.md')
+    expect(fresh.locator('.note-sources')).to_contain_text('líneas')
+    expect(fresh.locator('.feedback a[href^="https://"]')).to_have_count(0)
+    fresh.reload()
+    expect(fresh.locator('.option-reasons li')).to_have_count(4)
+    assert stored(fresh)['stats']['env-216']['seen'] == 1
+    fresh.screenshot(path=str(OUT/'notes-feedback.png'), full_page=True)
+    fresh.locator('[data-action=finish]').click()
+    fresh.locator('#dialog-ok').click()
+    fresh.locator('.review-item summary').first.click()
+    expect(fresh.locator('.review-item[open] .option-reasons li')).to_have_count(4)
+
+    # Every new question renders all rationales and its private-source reference.
+    navigate(fresh, '#bank')
+    new_ids = fresh.evaluate('SC.bank.filter(q=>q.addedInRevision===5).map(q=>q.id)')
+    assert len(new_ids) == 63
+    for qid in new_ids:
+        fresh.locator('#search').fill(qid)
+        expect(fresh.locator('.bank-item')).to_have_count(1)
+        fresh.locator('.bank-item summary').click()
+        expect(fresh.locator('.option-reasons li')).to_have_count(4)
+        expect(fresh.locator('.note-sources')).to_contain_text('SC-200.md')
+    navigate(fresh, '#home')
+    expect(fresh.locator('.stat').first).to_contain_text('563')
+    fresh.locator('[data-action=start-exam]').click()
+    expect(fresh.locator('.option-review')).to_have_count(0)
+    expect(fresh.locator('.note-sources')).to_have_count(0)
+
+    # Import a real revision-4-shaped fixture via the UI and resume unchanged.
+    old_context = local_context(browser)
+    old_page = old_context.new_page()
+    old_page.on('pageerror', lambda error: errors.append(str(error)))
+    navigate(old_page, '#settings')
+    fixture = Path(__file__).resolve().parent/'fixtures/revision4-progress.json'
+    raw = json.loads(fixture.read_text())
+    old_page.locator('#import-file').set_input_files(str(fixture))
+    old_page.locator('#dialog-ok').click()
+    expect(old_page.locator('.resume')).to_be_visible()
+    assert stored(old_page)['active'] == raw['active']
+    assert stored(old_page)['history'] == raw['history']
+    assert stored(old_page)['bookmarks'] == raw['bookmarks']
+    assert stored(old_page)['stats'] == raw['stats']
+    old_page.get_by_role('link', name='Continuar sesión').click()
+    index = raw['active']['ids'].index('hunt-081')
+    old_page.locator(f'[data-action="jump"][data-index="{index}"]').click()
+    expect(old_page.locator('.question h1')).to_contain_text('búsqueda histórica larga')
+    old_page.locator('[data-action=check]').click()
+    expect(old_page.locator('.feedback')).to_contain_text('Correcto')
+    expect(old_page.locator('.note-sources')).to_have_count(0)
+    navigate(old_page, '#history')
+    old_page.get_by_role('link', name='Ver respuestas').first.click()
+    expect(old_page.locator('.score-ring')).to_contain_text('100%')
+
+    # The longer feedback also fits the phone layout.
+    navigate(phone, '#bank')
+    phone.locator('#search').fill('hunt-102')
+    phone.locator('.bank-item summary').click()
+    expect(phone.locator('.option-reasons li')).to_have_count(4)
+    assert phone.evaluate('document.documentElement.scrollWidth <= innerWidth')
+    phone.screenshot(path=str(OUT/'mobile-notes-kql.png'), full_page=True)
 
     assert not errors, errors
     browser.close()

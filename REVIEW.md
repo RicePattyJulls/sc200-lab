@@ -1,5 +1,7 @@
 # Criterios y cobertura · SC-200 Lab
 
+La actualización vigente es la [revisión 5 del 12 de octubre de 2026](REVISION-5.md): 563 preguntas, 66 temas, 63 incorporaciones y 7 aclaraciones basadas exclusivamente en los apuntes privados. No se consultó internet ni se revalidaron enlaces externos en esa actualización. El resto de este documento conserva el registro histórico de las revisiones anteriores y sus recuentos de entonces.
+
 Fecha de revisión: 8 de septiembre de 2026. Banco independiente de práctica, no material oficial ni garantía de cobertura exhaustiva.
 
 Revisión 3: banco revisado contra `SC-200.md` corregido; 3 correcciones y 12 sustituciones por cobertura, conservando 500 preguntas, 50 grupos y el reparto 210/190/100.

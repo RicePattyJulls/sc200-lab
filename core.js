@@ -3,13 +3,19 @@
   const bank = [], groups = [];
   const domains = {env: 'Gestión del entorno SecOps', response: 'Respuesta a incidentes', hunt: 'Threat hunting'};
   const weights = {env: 21, response: 19, hunt: 10};
-  const bankRevision = 4;
+  const bankRevision = 5;
   // Each archived original has a revision cutoff, so revision 2 sessions do not revert to revision 1.
   // Any revision ever published is valid; only a future revision is rejected.
   const knownRevision = v => Number.isInteger(v) && v >= 1 && v <= bankRevision;
-  function previousQuestion(s, id) {
+  function replacedQuestion(s, id) {
     const changedAt = root.SC.previousQuestionRevisions?.[id] || 2;
     return (s.bankRevision || 1) < changedAt ? root.SC.previousQuestions?.[id] : undefined;
+  }
+  function previousQuestion(s, id) {
+    const revision = s.bankRevision || 1;
+    const original = replacedQuestion(s, id);
+    if (original) return original;
+    return root.SC.questionVersions?.[id]?.find(v => revision < v.beforeRevision)?.question;
   }
   function questionFor(s, id) {
     return previousQuestion(s, id) || bank.find(q => q.id === id);
@@ -52,7 +58,7 @@
   }
   function record(state, s, id) {
     if (s.checked.includes(id)) return;
-    if (previousQuestion(s, id)) {s.checked.push(id); return;}
+    if (replacedQuestion(s, id)) {s.checked.push(id); return;}
     const q = bank.find(q => q.id === id), old = state.stats[id] || {seen: 0, right: 0};
     const good = correct(q, s.answers[id]);
     state.stats[id] = {seen: old.seen + 1, right: old.right + +good, lastCorrect: good};
@@ -88,8 +94,8 @@
     if (raw.bankRevision !== undefined && !knownRevision(raw.bankRevision)) fail();
     if ((raw.bankRevision || 1) < bankRevision) {
       // Keep results in history, but do not transfer mastery to replacement questions.
-      for (const id of Object.keys(root.SC.previousQuestions || {})) if (previousQuestion(raw, id)) delete clean.stats[id];
-      clean.bookmarks = clean.bookmarks.filter(id => !previousQuestion(raw, id));
+      for (const id of Object.keys(root.SC.previousQuestions || {})) if (replacedQuestion(raw, id)) delete clean.stats[id];
+      clean.bookmarks = clean.bookmarks.filter(id => !replacedQuestion(raw, id));
     }
     return JSON.parse(JSON.stringify(clean));
   }

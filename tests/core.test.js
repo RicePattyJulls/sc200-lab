@@ -1,6 +1,6 @@
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const SC = require('../core');require('../sources');require('../environment');require('../response');require('../hunting');require('../references');
+const SC = require('../core');require('../sources');require('../environment');require('../response');require('../hunting');require('../references');require('../notes-source');require('../notes');
 
 test('sesiones antiguas conservan preguntas y notas sin atribuir dominio a reemplazos',()=>{
   const q=SC.bank.find(q=>q.id==='hunt-067'), old=SC.previousQuestions[q.id];
@@ -21,7 +21,7 @@ test('sesiones antiguas conservan preguntas y notas sin atribuir dominio a reemp
 });
 
 test('la revisión mantiene KQL y referencias específicas de MDI y grafos',()=>{
-  assert.equal(SC.bank.filter(q=>q.code).length,20);
+  assert.equal(SC.bank.filter(q=>q.code&&!q.addedInRevision).length,20);
   for(const id of ['env-042','response-084'])assert.deepEqual(SC.bank.find(q=>q.id===id).sources,['mdiactions']);
   assert.match(SC.bank.find(q=>q.id==='env-042').prompt,/v3.x/);
   assert.match(SC.bank.find(q=>q.id==='response-084').prompt,/v2.x/);
@@ -32,13 +32,13 @@ test('la revisión mantiene KQL y referencias específicas de MDI y grafos',()=>
   const raw=SC.blank();raw.bankRevision=999;assert.throws(()=>SC.validate(raw));
 });
 
-test('500 preguntas únicas, 50 grupos y distribución 210/190/100',()=>{
-  assert.equal(SC.bank.length,500);assert.equal(SC.groups.length,50);
-  assert.equal(new Set(SC.bank.map(q=>q.id)).size,500);assert.equal(new Set(SC.bank.map(q=>q.prompt)).size,500);
-  for(const [d,n] of Object.entries({env:210,response:190,hunt:100}))assert.equal(SC.bank.filter(q=>q.domain===d).length,n);
+test('563 preguntas únicas, 66 grupos y distribución 245/202/116',()=>{
+  assert.equal(SC.bank.length,563);assert.equal(SC.groups.length,66);
+  assert.equal(new Set(SC.bank.map(q=>q.id)).size,563);assert.equal(new Set(SC.bank.map(q=>q.prompt)).size,563);
+  for(const [d,n] of Object.entries({env:245,response:202,hunt:116}))assert.equal(SC.bank.filter(q=>q.domain===d).length,n);
 });
-test('cada pregunta tiene opciones distintas, respuesta y referencias oficiales válidas',()=>{
-  for(const q of SC.bank){assert.ok(q.prompt.length>25,q.id);assert.ok(q.explanation.length>25,q.id);assert.ok(q.choices.length>=4,q.id);assert.equal(new Set(q.choices).size,q.choices.length,q.id);assert.ok(q.correct.length>0);assert.ok(q.correct.length<q.choices.length);assert.ok(q.correct.every(i=>Number.isInteger(i)&&q.choices[i]));assert.ok(q.sources.length);for(const k of q.sources)assert.match(SC.sourceURL(k),/^https:\/\/learn\.microsoft\.com\/en-us\/(?!undefined).+$/);}
+test('cada pregunta tiene opciones distintas, respuesta y procedencia identificada',()=>{
+  for(const q of SC.bank){assert.ok(q.prompt.length>25,q.id);assert.ok(q.explanation.length>25,q.id);assert.ok(q.choices.length>=4,q.id);assert.equal(new Set(q.choices).size,q.choices.length,q.id);assert.ok(q.correct.length>0);assert.ok(q.correct.length<q.choices.length);assert.ok(q.correct.every(i=>Number.isInteger(i)&&q.choices[i]));assert.ok(q.sources.length || q.noteRefs?.length);for(const k of q.sources)assert.match(SC.sourceURL(k),/^https:\/\/learn\.microsoft\.com\/en-us\/(?!undefined).+$/);}
 });
 test('100 simulacros equilibrados sin preguntas repetidas y con opciones permutadas',()=>{
   let shuffled=false;
@@ -66,4 +66,69 @@ test('prioriza preguntas nuevas y respeta un pool pequeño',()=>{
 });
 test('un examen en blanco puntúa cero y registra 50 fallos',()=>{
   const st=SC.blank();st.active=SC.session('exam',SC.bank,50);SC.finish(st);assert.equal(SC.result(st.active).percent,0);assert.equal(SC.result(st.active).answered,0);assert.equal(Object.keys(st.stats).length,50);assert.ok(Object.values(st.stats).every(v=>v.lastCorrect===false));
+});
+
+test('los 500 contenidos de revisión 4 siguen disponibles sin cambios para sesiones anteriores',()=>{
+  const {createHash}=require('node:crypto');
+  const hashes=require('./fixtures/revision4-bank-hashes.json');
+  assert.equal(Object.keys(hashes).length,500);
+  for(const [id,hash] of Object.entries(hashes)) {
+    const original=SC.questionFor({bankRevision:4},id);
+    assert.equal(createHash('sha256').update(JSON.stringify(original)).digest('hex'),hash,id);
+  }
+});
+
+test('importar revisión 4 conserva respuestas, orden, notas, marcadores y estadísticas',()=>{
+  const raw=require('./fixtures/revision4-progress.json');
+  const originals=require('./fixtures/revision4-questions.json');
+  const clean=SC.validate(JSON.parse(JSON.stringify(raw)));
+  assert.equal(clean.bankRevision,5);
+  for(const field of ['active','history','bookmarks','stats']) assert.deepEqual(clean[field],raw[field],field);
+  for(const q of originals) assert.deepEqual(SC.questionFor(clean.active,q.id),q);
+  assert.equal(SC.result(clean.active).percent,100);
+  assert.equal(SC.result(clean.history[0]).percent,100);
+  SC.finish(clean);
+  assert.equal(SC.result(clean.history[0]).percent,100);
+  assert.deepEqual(SC.validate(JSON.parse(JSON.stringify(clean))),clean);
+  const current=SC.session('study',[SC.bank.find(q=>q.id==='hunt-081')],1);
+  assert.match(SC.questionFor(current,'hunt-081').prompt,/guardar su salida en una tabla/);
+});
+
+test('las nuevas preguntas tienen trazabilidad privada y razones para todas las opciones',()=>{
+  const fresh=SC.bank.filter(q=>q.addedInRevision===5);
+  assert.equal(fresh.length,63);
+  assert.equal(SC.noteCorrections.length,7);
+  assert.match(SC.notesSource.sha256,/^[a-f0-9]{64}$/);
+  assert.equal(SC.notesSource.lineCount,2810);
+  for(const q of SC.bank.filter(q=>q.noteRefs)) {
+    assert.deepEqual(q.sources,[],q.id);
+    assert.ok(q.noteRefs.length,q.id);
+    for(const key of q.noteRefs) {
+      const r=SC.noteSections[key];assert.ok(r,key);
+      assert.ok(r.lines[0]>0&&r.lines[1]>=r.lines[0]&&r.lines[1]<=SC.notesSource.lineCount,key);
+      assert.match(r.sha256,/^[a-f0-9]{64}$/);
+    }
+  }
+  for(const q of fresh) {
+    assert.equal(q.optionExplanations.length,q.choices.length,q.id);
+    assert.ok(q.optionExplanations.every(s=>s.length>35),q.id);
+    assert.equal(new Set(q.correct).size,q.correct.length,q.id);
+    assert.ok(!JSON.stringify(q).includes('https://'),q.id);
+  }
+  for(const g of SC.groups)assert.equal(g.count,SC.bank.filter(q=>q.domain===g.domain&&q.topic===g.topic).length,g.topic);
+});
+
+test('los simulacros incluyen la ampliación sin cambiar 21/19/10 ni repetir preguntas',()=>{
+  const legacy=Object.fromEntries(SC.bank.filter(q=>!q.addedInRevision).map(q=>[q.id,{seen:5,right:3,lastCorrect:true}]));
+  const s=SC.session('exam',SC.bank,50,legacy);
+  assert.equal(s.ids.length,50);
+  for(const [d,n] of Object.entries(SC.weights)) {
+    assert.equal(s.ids.filter(id=>id.startsWith(d+'-')).length,n);
+    const available=SC.bank.filter(q=>q.domain===d&&q.addedInRevision===5).length;
+    assert.equal(s.ids.filter(id=>id.startsWith(d+'-')&&!legacy[id]).length,Math.min(n,available));
+  }
+  const st=SC.blank();st.active=s;
+  for(const id of s.ids)st.active.answers[id]=[...SC.questionFor(s,id).correct];
+  SC.finish(st);assert.equal(SC.result(s).percent,100);
+  assert.deepEqual(SC.validate(JSON.parse(JSON.stringify(st))),st);
 });

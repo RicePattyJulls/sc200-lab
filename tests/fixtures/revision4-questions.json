@@ -1,0 +1,204 @@
+[
+  {
+    "id": "env-004",
+    "domain": "env",
+    "topic": "Roles y alcance",
+    "chapter": 2,
+    "sources": [
+      "run"
+    ],
+    "prompt": "El analista debe gestionar incidentes y ejecutar manualmente playbooks preconfigurados. Elige los dos roles específicos.",
+    "choices": [
+      "Microsoft Sentinel Responder",
+      "Microsoft Sentinel Playbook Operator",
+      "Microsoft Sentinel Reader",
+      "Monitoring Metrics Publisher"
+    ],
+    "correct": [
+      0,
+      1
+    ],
+    "explanation": "Un rol permite gestionar el incidente; el otro, ejecutar el playbook."
+  },
+  {
+    "id": "env-033",
+    "domain": "env",
+    "topic": "ASR y políticas de seguridad",
+    "chapter": 3,
+    "sources": [
+      "asrref"
+    ],
+    "prompt": "Una regla ASR compatible debe advertir y permitir que el usuario continúe temporalmente. ¿Qué modo usas?",
+    "choices": [
+      "Warn",
+      "Audit",
+      "Disabled",
+      "Passive"
+    ],
+    "correct": [
+      0
+    ],
+    "explanation": "Warn proporciona advertencia y una opción de omisión en reglas compatibles."
+  },
+  {
+    "id": "env-055",
+    "domain": "env",
+    "topic": "Notificaciones y reducción de ruido",
+    "chapter": 12,
+    "sources": [
+      "tune"
+    ],
+    "prompt": "Un script de mantenimiento dispara una alerta conocida. Quieres silenciar solo ese contexto. ¿Qué configuras?",
+    "choices": [
+      "Una regla de tuning o supresión específica",
+      "Una exclusión global del antivirus",
+      "Eliminar el canal Security",
+      "Desactivar todas las reglas"
+    ],
+    "correct": [
+      0
+    ],
+    "explanation": "Se deben delimitar las condiciones del falso positivo."
+  },
+  {
+    "id": "env-176",
+    "domain": "env",
+    "topic": "NRT y elección de detección",
+    "chapter": 7,
+    "sources": [
+      "rules"
+    ],
+    "prompt": "Un escenario requiere correlación multietapa gestionada por Microsoft. ¿Qué tipo tradicional de Sentinel corresponde?",
+    "choices": [
+      "Fusion",
+      "Una DCRA",
+      "Un workbook",
+      "Una watchlist"
+    ],
+    "correct": [
+      0
+    ],
+    "explanation": "Fusion usa correlación gestionada, distinta de una consulta scheduled editable."
+  },
+  {
+    "id": "response-022",
+    "domain": "response",
+    "topic": "Correlación y casos",
+    "chapter": 8,
+    "sources": [
+      "cases"
+    ],
+    "prompt": "¿Qué ventaja aporta un caso que reúne varios incidentes relacionados?",
+    "choices": [
+      "Coordinación de una investigación más amplia",
+      "Borrado automático de evidencias duplicadas",
+      "Conversión de logs en licencias",
+      "Aislamiento obligatorio de todos los activos"
+    ],
+    "correct": [
+      0
+    ],
+    "explanation": "El caso organiza trabajo que trasciende un incidente."
+  },
+  {
+    "id": "hunt-004",
+    "domain": "hunt",
+    "topic": "KQL: filtros y columnas",
+    "chapter": 13,
+    "sources": [
+      "strings"
+    ],
+    "prompt": "Quieres incluir PowerShell independientemente de mayúsculas en el nombre. Completa la condición.",
+    "choices": [
+      "FileName =~ \"powershell.exe\"",
+      "FileName == \"powershell.exe\"",
+      "FileName != \"powershell.exe\"",
+      "FileName has_cs \"powershell.exe\""
+    ],
+    "correct": [
+      0
+    ],
+    "explanation": "=~ compara igualdad sin sensibilidad a mayúsculas.",
+    "code": "DeviceProcessEvents\n| where Timestamp > ago(1d)\n| where [Target]\n| project Timestamp, DeviceName, FileName, ProcessCommandLine"
+  },
+  {
+    "id": "hunt-007",
+    "domain": "hunt",
+    "topic": "KQL: filtros y columnas",
+    "chapter": 13,
+    "sources": [
+      "strings"
+    ],
+    "prompt": "Debes incluir dos nombres de ejecutable sin distinguir mayúsculas. ¿Qué filtro usas?",
+    "choices": [
+      "FileName in~ (\"powershell.exe\", \"pwsh.exe\")",
+      "FileName == \"powershell.exe,pwsh.exe\"",
+      "FileName != \"powershell.exe\"",
+      "FileName has_all (\"powershell.exe\", \"pwsh.exe\")"
+    ],
+    "correct": [
+      0
+    ],
+    "explanation": "in~ permite pertenencia a una lista sin sensibilidad a mayúsculas."
+  },
+  {
+    "id": "hunt-052",
+    "domain": "hunt",
+    "topic": "Patrones de detección con KQL",
+    "chapter": 13,
+    "sources": [
+      "best"
+    ],
+    "prompt": "Para detectar Word lanzando cmd.exe, ¿qué pareja de condiciones corresponde?",
+    "choices": [
+      "InitiatingProcessFileName =~ \"winword.exe\" y FileName =~ \"cmd.exe\"",
+      "FileName =~ \"winword.exe\" y InitiatingProcessFileName =~ \"cmd.exe\"",
+      "DeviceName =~ \"cmd.exe\"",
+      "AccountName =~ \"winword.exe\""
+    ],
+    "correct": [
+      0
+    ],
+    "explanation": "Hay que distinguir proceso padre e hijo."
+  },
+  {
+    "id": "hunt-071",
+    "domain": "hunt",
+    "topic": "Hunting, enriquecimiento y blast radius",
+    "chapter": 10,
+    "sources": [
+      "bookmarks"
+    ],
+    "prompt": "Una búsqueda produce evidencia útil que quieres preservar con contexto investigativo. ¿Qué recurso Sentinel utilizas?",
+    "choices": [
+      "Un bookmark",
+      "Una DCRA",
+      "Una política Safe Links",
+      "Una regla de retención"
+    ],
+    "correct": [
+      0
+    ],
+    "explanation": "El bookmark conserva el hallazgo y contexto de investigación."
+  },
+  {
+    "id": "hunt-081",
+    "domain": "hunt",
+    "topic": "Data lake, KQL jobs y resúmenes",
+    "chapter": 10,
+    "sources": [
+      "jobs"
+    ],
+    "prompt": "Necesitas una búsqueda histórica larga en el data lake, ejecutada una vez. ¿Qué capacidad utilizas?",
+    "choices": [
+      "Un KQL job de una sola ejecución",
+      "Una regla ASR",
+      "Una DCRA",
+      "Una notificación de incidente"
+    ],
+    "correct": [
+      0
+    ],
+    "explanation": "Los jobs admiten investigaciones y análisis de larga ejecución."
+  }
+]
