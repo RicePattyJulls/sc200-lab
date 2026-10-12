@@ -1,6 +1,6 @@
 # Criterios y cobertura · SC-200 Lab
 
-La actualización vigente es la [revisión 6](REVISION-6.md): 176 preguntas originales, todo el banco activo basado exclusivamente en SC-200.md. Las 500 preguntas heredadas se conservan para progreso e historial, fuera de las prácticas y simulacros nuevos. El resto de este documento mantiene el registro histórico y los recuentos de las revisiones anteriores.
+La actualización vigente es la [revisión 7](REVISION-7.md): 276 preguntas originales (100 nuevas y 176 conservadas), todo el banco activo basado exclusivamente en SC-200.md. Las 500 preguntas heredadas se conservan para progreso e historial, fuera de las prácticas y simulacros nuevos. El resto de este documento mantiene el registro histórico y los recuentos de las revisiones anteriores.
 
 Fecha de revisión: 8 de septiembre de 2026. Banco independiente de práctica, no material oficial ni garantía de cobertura exhaustiva.
 

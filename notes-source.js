@@ -290,3 +290,24 @@ Object.assign(SC.noteSections, {
     "sha256": "2d282eca17043aa7cc37313815a32b5f1420bcede4794147840a555196388ab3"
   }
 });
+
+Object.assign(SC.noteSections, {
+  "planes-cloud": {
+    "chapter": 1,
+    "section": "Por recurso",
+    "lines": [
+      127,
+      160
+    ],
+    "sha256": "ceefd7b42903145a7dcc76dafd0f1d47b75aafabc04163d1b590947c113347e2"
+  },
+  "motores-nativos": {
+    "chapter": 7,
+    "section": "Los motores nativos y rutas de alerta",
+    "lines": [
+      1601,
+      1666
+    ],
+    "sha256": "a31d8364bac8c89e8316b25add7a0a9064cc82d0793ea4ba6ababff4f6d8db92"
+  }
+});

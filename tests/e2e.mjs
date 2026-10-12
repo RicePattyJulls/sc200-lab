@@ -49,7 +49,7 @@ try {
   const page = await ctx.newPage();
   await navigate(page);
   await contains(page.locator('h1'), 'Entiende la decisión');
-  assert.equal(await page.evaluate(() => SC.bank.length), 176);
+  assert.equal(await page.evaluate(() => SC.bank.length), 276);
   await screenshot(page, 'desktop-home');
 
   const legacyCtx = await context(), legacy = await legacyCtx.newPage();
@@ -169,7 +169,7 @@ try {
   assert.ok(await phone.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
   await screenshot(phone, 'mobile-quiz');
   await navigate(phone, '#coverage');
-  await count(phone.locator('.coverage-item'), 21);
+  await count(phone.locator('.coverage-item'), 29);
   assert.ok(await phone.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
 
   const restricted = await context(), noStorage = await restricted.newPage();
@@ -182,7 +182,7 @@ try {
   await local.goto(pathToFileURL(path.join(root,'index.html')).href);
   await local.waitForLoadState('networkidle');
   await contains(local.locator('h1'), 'Entiende la decisión');
-  assert.equal(await local.evaluate(() => SC.bank.length), 176);
+  assert.equal(await local.evaluate(() => SC.bank.length), 276);
   console.log('PASS: bank, mobile, blocked storage and file://');
 
   const freshCtx = await context({viewport:{width:1280,height:900}}), fresh = await freshCtx.newPage();
@@ -211,7 +211,7 @@ try {
   await count(fresh.locator('.review-item[open] .option-reasons li'), 4);
   await navigate(fresh, '#bank');
   const ids = await fresh.evaluate(() => SC.bank.map(q => q.id));
-  assert.equal(ids.length, 176);
+  assert.equal(ids.length, 276);
   for (const id of ids) {
     await fresh.locator('#search').fill(id);
     await count(fresh.locator('.bank-item'), 1);
@@ -220,11 +220,11 @@ try {
     await contains(fresh.locator('.note-sources'), 'SC-200.md');
   }
   await navigate(fresh, '#home');
-  await contains(fresh.locator('.stat').first(), '176');
+  await contains(fresh.locator('.stat').first(), '276');
   await fresh.locator('[data-action=start-exam]').click();
   await count(fresh.locator('.option-review'), 0);
   await count(fresh.locator('.note-sources'), 0);
-  console.log('PASS: all 176 active questions, explanations and source references');
+  console.log('PASS: all 276 active questions, explanations and source references');
 
   const oldCtx = await context(), oldPage = await oldCtx.newPage();
   await navigate(oldPage, '#settings');
@@ -280,8 +280,42 @@ try {
   await contains(oldPage.locator('.score-ring'), '100%');
   assert.equal((await stored(oldPage)).stats['env-004'].seen, retest.stats['env-004'].seen);
 
+  // An in-progress revision 6 session retains its answers after expansion.
+  await navigate(oldPage, '#settings');
+  const fixture6 = path.join(root, 'tests/fixtures/revision6-progress.json');
+  const raw6 = JSON.parse(await readFile(fixture6, 'utf8'));
+  await oldPage.locator('#import-file').setInputFiles(fixture6);
+  await oldPage.locator('#dialog-ok').click();
+  const imported6 = await stored(oldPage);
+  for (const key of ['active','history','stats','bookmarks']) assert.deepEqual(imported6[key], raw6[key], key);
+  await navigate(oldPage, '#quiz');
+  await oldPage.locator('[data-action=check]').click();
+  await contains(oldPage.locator('.feedback'), 'Correcto');
+  assert.equal((await stored(oldPage)).active.bankRevision, 6);
+
+  const expansionCtx = await context(), expanded = await expansionCtx.newPage();
+  await navigate(expanded, '#study/env');
+  await expanded.locator('#topic').selectOption('Correo: autenticación y políticas');
+  await expanded.locator('#count').selectOption('50');
+  await expanded.locator('[data-action=start-study]').click();
+  const expandedSession = (await stored(expanded)).active;
+  assert.equal(expandedSession.ids.length, 18);
+  assert.equal(expandedSession.bankRevision, 7);
+  index = expandedSession.ids.indexOf('env-342');assert.ok(index >= 0);
+  await expanded.locator(`[data-action=jump][data-index="${index}"]`).click();
+  await expanded.locator('input[name=answer][value="0"]').check();
+  assert.ok(await expanded.locator('[data-action=check]').isDisabled());
+  await expanded.locator('input[name=answer][value="1"]').check();
+  await expanded.locator('[data-action=check]').click();
+  await contains(expanded.locator('.feedback'), 'Correcto');
+  await count(expanded.locator('.option-reasons li'), 4);
+  await contains(expanded.locator('.note-sources'), '826');
+  await screenshot(expanded, 'expansion-feedback');
+  await expansionCtx.close();
+  console.log('PASS: revision-6 import and revision-7 multiple-choice scenario');
+
   await navigate(phone, '#bank');
-  await phone.locator('#search').fill('hunt-102');
+  await phone.locator('#search').fill('hunt-142');
   await phone.locator('.bank-item summary').click();
   await count(phone.locator('.option-reasons li'), 4);
   assert.ok(await phone.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
@@ -289,7 +323,7 @@ try {
 
   assert.deepEqual(errors, [], 'JavaScript errors');
   assert.deepEqual(external, [], 'Unexpected external requests');
-  console.log('PASS: desktop, mobile, all 176 active questions, source references, study, multiple answers, scoring, exam, resume, deadline, export/import, revision-4 progress, legacy questions, storage failure and file://. No JavaScript errors or external requests.');
+  console.log('PASS: desktop, mobile, all 276 active questions, source references, study, multiple answers, scoring, exam, resume, deadline, export/import, revision-4 progress, legacy questions, storage failure and file://. No JavaScript errors or external requests.');
   console.log('Screenshots:', out);
 } finally {
   if (browser) await browser.close();

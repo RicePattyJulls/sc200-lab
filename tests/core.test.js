@@ -1,6 +1,6 @@
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const SC = require('../core');require('../sources');require('../environment');require('../response');require('../hunting');require('../references');require('../notes-source');require('../notes');require('../renewal');require('../fresh-bank');
+const SC = require('../core');require('../sources');require('../environment');require('../response');require('../hunting');require('../references');require('../notes-source');require('../notes');require('../renewal');require('../fresh-bank');require('../expansion');
 
 test('sesiones antiguas conservan preguntas y notas sin atribuir dominio a reemplazos',()=>{
   const q=SC.retiredQuestions['hunt-067'], old=SC.previousQuestions[q.id];
@@ -24,15 +24,15 @@ test('el banco activo contiene solo originales desde apuntes y archiva los 500 h
   assert.equal(Object.keys(SC.retiredQuestions).length,500);
   assert.ok(SC.bank.every(q=>q.noteRefs?.length && q.optionExplanations?.length===q.choices.length));
   assert.ok(SC.bank.every(q=>!SC.retiredQuestions[q.id]));
-  assert.ok(SC.bank.every(q=>[5,6].includes(q.addedInRevision)));
-  assert.equal(SC.bank.filter(q=>q.code).length,9);
+  assert.ok(SC.bank.every(q=>[5,6,7].includes(q.addedInRevision)));
+  assert.equal(SC.bank.filter(q=>q.code).length,13);
   const raw=SC.blank();raw.bankRevision=999;assert.throws(()=>SC.validate(raw));
 });
 
-test('176 preguntas únicas, 21 grupos y distribución 93/42/41',()=>{
-  assert.equal(SC.bank.length,176);assert.equal(SC.groups.length,21);
-  assert.equal(new Set(SC.bank.map(q=>q.id)).size,176);assert.equal(new Set(SC.bank.map(q=>q.prompt)).size,176);
-  for(const [d,n] of Object.entries({env:93,response:42,hunt:41}))assert.equal(SC.bank.filter(q=>q.domain===d).length,n);
+test('276 preguntas únicas, 29 grupos y distribución 145/66/65',()=>{
+  assert.equal(SC.bank.length,276);assert.equal(SC.groups.length,29);
+  assert.equal(new Set(SC.bank.map(q=>q.id)).size,276);assert.equal(new Set(SC.bank.map(q=>q.prompt)).size,276);
+  for(const [d,n] of Object.entries({env:145,response:66,hunt:65}))assert.equal(SC.bank.filter(q=>q.domain===d).length,n);
 });
 test('cada pregunta tiene opciones distintas, respuesta y procedencia identificada',()=>{
   for(const q of SC.bank){assert.ok(q.prompt.length>25,q.id);assert.ok(q.explanation.length>25,q.id);assert.ok(q.choices.length>=4,q.id);assert.equal(new Set(q.choices).size,q.choices.length,q.id);assert.ok(q.correct.length>0);assert.ok(q.correct.length<q.choices.length);assert.ok(q.correct.every(i=>Number.isInteger(i)&&q.choices[i]));assert.ok(q.sources.length || q.noteRefs?.length);for(const k of q.sources)assert.match(SC.sourceURL(k),/^https:\/\/learn\.microsoft\.com\/en-us\/(?!undefined).+$/);}
@@ -79,7 +79,7 @@ test('importar revisión 4 conserva respuestas, orden, notas, marcadores y estad
   const raw=require('./fixtures/revision4-progress.json');
   const originals=require('./fixtures/revision4-questions.json');
   const clean=SC.validate(JSON.parse(JSON.stringify(raw)));
-  assert.equal(clean.bankRevision,6);
+  assert.equal(clean.bankRevision,7);
   for(const field of ['active','history','bookmarks','stats']) assert.deepEqual(clean[field],raw[field],field);
   for(const q of originals) assert.deepEqual(SC.questionFor(clean.active,q.id),q);
   assert.equal(SC.result(clean.active).percent,100);
@@ -93,9 +93,10 @@ test('importar revisión 4 conserva respuestas, orden, notas, marcadores y estad
 
 test('las nuevas preguntas tienen trazabilidad privada y razones para todas las opciones',()=>{
   const fresh=SC.bank;
-  assert.equal(fresh.length,176);
+  assert.equal(fresh.length,276);
   assert.equal(fresh.filter(q=>q.addedInRevision===5).length,63);
   assert.equal(fresh.filter(q=>q.addedInRevision===6).length,113);
+  assert.equal(fresh.filter(q=>q.addedInRevision===7).length,100);
   assert.equal(SC.noteCorrections.length,7);
   assert.match(SC.notesSource.sha256,/^[a-f0-9]{64}$/);
   assert.equal(SC.notesSource.lineCount,2810);
@@ -139,7 +140,7 @@ test('las 563 preguntas publicadas en revisión 5 siguen intactas para sus sesio
 test('progreso de revisión 5 mantiene stats, guardadas, sesión e historial sin transferir aciertos',()=>{
   const raw=require('./fixtures/revision5-progress.json');
   const clean=SC.validate(structuredClone(raw));
-  assert.equal(clean.bankRevision,6);
+  assert.equal(clean.bankRevision,7);
   for(const key of ['active','history','stats','bookmarks'])assert.deepEqual(clean[key],raw[key]);
   assert.equal(SC.result(clean.active).percent,100);
   SC.finish(clean);assert.equal(SC.result(clean.history[0]).percent,100);
@@ -158,4 +159,31 @@ test('rechaza preguntas retiradas dentro de una sesión nueva pero permite su re
   assert.ok(SC.validate(raw));
   SC.finish(raw);assert.equal(SC.result(raw.active).percent,100);
   assert.ok(SC.validate(raw));
+});
+
+test('las 176 preguntas de revisión 6 conservan su contenido completo',()=>{
+  const hashes=require('./fixtures/revision6-bank-hashes.json');
+  const {createHash}=require('node:crypto');
+  assert.equal(Object.keys(hashes).length,176);
+  for(const [id,hash] of Object.entries(hashes))assert.equal(createHash('sha256').update(JSON.stringify(SC.questionFor({bankRevision:6},id))).digest('hex'),hash,id);
+});
+
+test('importar revisión 6 conserva sesión, respuestas, notas, estadísticas y guardadas',()=>{
+  const raw=require('./fixtures/revision6-progress.json');
+  const clean=SC.validate(structuredClone(raw));
+  assert.equal(clean.bankRevision,7);
+  for(const key of ['active','history','stats','bookmarks'])assert.deepEqual(clean[key],raw[key],key);
+  assert.equal(SC.result(clean.active).percent,100);
+  SC.finish(clean);assert.equal(SC.result(clean.history[0]).percent,100);
+  assert.deepEqual(SC.validate(structuredClone(clean)),clean);
+});
+
+test('quien completó la revisión 6 recibe preguntas nuevas sin cambiar el equilibrio del examen',()=>{
+  const seen=Object.fromEntries(SC.bank.filter(q=>q.addedInRevision<7).map(q=>[q.id,{seen:1,right:1,lastCorrect:true}]));
+  for(let i=0;i<30;i++) {
+    const s=SC.session('exam',SC.bank,50,seen);
+    assert.equal(s.bankRevision,7);assert.equal(s.ids.length,50);
+    assert.ok(s.ids.every(id=>SC.questionFor(s,id).addedInRevision===7));
+    for(const [d,n] of Object.entries(SC.weights))assert.equal(s.ids.filter(id=>id.startsWith(d+'-')).length,n);
+  }
 });

@@ -3,7 +3,7 @@
   const bank = [], groups = [];
   const domains = {env: 'Gestión del entorno SecOps', response: 'Respuesta a incidentes', hunt: 'Threat hunting'};
   const weights = {env: 21, response: 19, hunt: 10};
-  const bankRevision = 6;
+  const bankRevision = 7;
   // Each archived original has a revision cutoff, so revision 2 sessions do not revert to revision 1.
   // Any revision ever published is valid; only a future revision is rejected.
   const knownRevision = v => Number.isInteger(v) && v >= 1 && v <= bankRevision;
