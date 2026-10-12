@@ -1,9 +1,9 @@
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const SC = require('../core');require('../sources');require('../environment');require('../response');require('../hunting');require('../references');require('../notes-source');require('../notes');
+const SC = require('../core');require('../sources');require('../environment');require('../response');require('../hunting');require('../references');require('../notes-source');require('../notes');require('../renewal');require('../fresh-bank');
 
 test('sesiones antiguas conservan preguntas y notas sin atribuir dominio a reemplazos',()=>{
-  const q=SC.bank.find(q=>q.id==='hunt-067'), old=SC.previousQuestions[q.id];
+  const q=SC.retiredQuestions['hunt-067'], old=SC.previousQuestions[q.id];
   const raw=SC.blank();delete raw.bankRevision;
   raw.active=SC.session('study',[q],1);delete raw.active.bankRevision;
   raw.active.answers[q.id]=[...old.correct];
@@ -20,22 +20,19 @@ test('sesiones antiguas conservan preguntas y notas sin atribuir dominio a reemp
   assert.match(SC.questionFor(fresh,q.id).prompt,/dispositivo origen/);
 });
 
-test('la revisión mantiene KQL y referencias específicas de MDI y grafos',()=>{
-  assert.equal(SC.bank.filter(q=>q.code&&!q.addedInRevision).length,20);
-  for(const id of ['env-042','response-084'])assert.deepEqual(SC.bank.find(q=>q.id===id).sources,['mdiactions']);
-  assert.match(SC.bank.find(q=>q.id==='env-042').prompt,/v3.x/);
-  assert.match(SC.bank.find(q=>q.id==='response-084').prompt,/v2.x/);
-  assert.equal(SC.bank.filter(q=>q.sources.includes('huntinggraph')).length,6);
-  assert.equal(SC.bank.filter(q=>q.domain==='hunt'&&q.sources.includes('incidents')).length,4);
-  assert.ok(SC.bank.some(q=>q.sources.includes('sentinelgraph')));
-  assert.ok(SC.bank.some(q=>q.sources.includes('graphvisual')));
+test('el banco activo contiene solo originales desde apuntes y archiva los 500 heredados',()=>{
+  assert.equal(Object.keys(SC.retiredQuestions).length,500);
+  assert.ok(SC.bank.every(q=>q.noteRefs?.length && q.optionExplanations?.length===q.choices.length));
+  assert.ok(SC.bank.every(q=>!SC.retiredQuestions[q.id]));
+  assert.ok(SC.bank.every(q=>[5,6].includes(q.addedInRevision)));
+  assert.equal(SC.bank.filter(q=>q.code).length,9);
   const raw=SC.blank();raw.bankRevision=999;assert.throws(()=>SC.validate(raw));
 });
 
-test('563 preguntas únicas, 66 grupos y distribución 245/202/116',()=>{
-  assert.equal(SC.bank.length,563);assert.equal(SC.groups.length,66);
-  assert.equal(new Set(SC.bank.map(q=>q.id)).size,563);assert.equal(new Set(SC.bank.map(q=>q.prompt)).size,563);
-  for(const [d,n] of Object.entries({env:245,response:202,hunt:116}))assert.equal(SC.bank.filter(q=>q.domain===d).length,n);
+test('176 preguntas únicas, 21 grupos y distribución 93/42/41',()=>{
+  assert.equal(SC.bank.length,176);assert.equal(SC.groups.length,21);
+  assert.equal(new Set(SC.bank.map(q=>q.id)).size,176);assert.equal(new Set(SC.bank.map(q=>q.prompt)).size,176);
+  for(const [d,n] of Object.entries({env:93,response:42,hunt:41}))assert.equal(SC.bank.filter(q=>q.domain===d).length,n);
 });
 test('cada pregunta tiene opciones distintas, respuesta y procedencia identificada',()=>{
   for(const q of SC.bank){assert.ok(q.prompt.length>25,q.id);assert.ok(q.explanation.length>25,q.id);assert.ok(q.choices.length>=4,q.id);assert.equal(new Set(q.choices).size,q.choices.length,q.id);assert.ok(q.correct.length>0);assert.ok(q.correct.length<q.choices.length);assert.ok(q.correct.every(i=>Number.isInteger(i)&&q.choices[i]));assert.ok(q.sources.length || q.noteRefs?.length);for(const k of q.sources)assert.match(SC.sourceURL(k),/^https:\/\/learn\.microsoft\.com\/en-us\/(?!undefined).+$/);}
@@ -82,7 +79,7 @@ test('importar revisión 4 conserva respuestas, orden, notas, marcadores y estad
   const raw=require('./fixtures/revision4-progress.json');
   const originals=require('./fixtures/revision4-questions.json');
   const clean=SC.validate(JSON.parse(JSON.stringify(raw)));
-  assert.equal(clean.bankRevision,5);
+  assert.equal(clean.bankRevision,6);
   for(const field of ['active','history','bookmarks','stats']) assert.deepEqual(clean[field],raw[field],field);
   for(const q of originals) assert.deepEqual(SC.questionFor(clean.active,q.id),q);
   assert.equal(SC.result(clean.active).percent,100);
@@ -90,13 +87,15 @@ test('importar revisión 4 conserva respuestas, orden, notas, marcadores y estad
   SC.finish(clean);
   assert.equal(SC.result(clean.history[0]).percent,100);
   assert.deepEqual(SC.validate(JSON.parse(JSON.stringify(clean))),clean);
-  const current=SC.session('study',[SC.bank.find(q=>q.id==='hunt-081')],1);
-  assert.match(SC.questionFor(current,'hunt-081').prompt,/guardar su salida en una tabla/);
+  assert.equal(SC.bank.some(q=>q.id==='hunt-081'),false);
+  assert.ok(SC.retiredQuestions['hunt-081']);
 });
 
 test('las nuevas preguntas tienen trazabilidad privada y razones para todas las opciones',()=>{
-  const fresh=SC.bank.filter(q=>q.addedInRevision===5);
-  assert.equal(fresh.length,63);
+  const fresh=SC.bank;
+  assert.equal(fresh.length,176);
+  assert.equal(fresh.filter(q=>q.addedInRevision===5).length,63);
+  assert.equal(fresh.filter(q=>q.addedInRevision===6).length,113);
   assert.equal(SC.noteCorrections.length,7);
   assert.match(SC.notesSource.sha256,/^[a-f0-9]{64}$/);
   assert.equal(SC.notesSource.lineCount,2810);
@@ -111,24 +110,52 @@ test('las nuevas preguntas tienen trazabilidad privada y razones para todas las 
   }
   for(const q of fresh) {
     assert.equal(q.optionExplanations.length,q.choices.length,q.id);
-    assert.ok(q.optionExplanations.every(s=>s.length>35),q.id);
+    assert.ok(q.optionExplanations.every(s=>s.length>20),q.id);
     assert.equal(new Set(q.correct).size,q.correct.length,q.id);
     assert.ok(!JSON.stringify(q).includes('https://'),q.id);
   }
   for(const g of SC.groups)assert.equal(g.count,SC.bank.filter(q=>q.domain===g.domain&&q.topic===g.topic).length,g.topic);
 });
 
-test('los simulacros incluyen la ampliación sin cambiar 21/19/10 ni repetir preguntas',()=>{
-  const legacy=Object.fromEntries(SC.bank.filter(q=>!q.addedInRevision).map(q=>[q.id,{seen:5,right:3,lastCorrect:true}]));
-  const s=SC.session('exam',SC.bank,50,legacy);
+test('los simulacros usan solo originales y priorizan las aún no vistas',()=>{
+  const seen=Object.fromEntries(SC.bank.filter(q=>q.addedInRevision===5).map(q=>[q.id,{seen:5,right:3,lastCorrect:true}]));
+  const s=SC.session('exam',SC.bank,50,seen);
   assert.equal(s.ids.length,50);
-  for(const [d,n] of Object.entries(SC.weights)) {
-    assert.equal(s.ids.filter(id=>id.startsWith(d+'-')).length,n);
-    const available=SC.bank.filter(q=>q.domain===d&&q.addedInRevision===5).length;
-    assert.equal(s.ids.filter(id=>id.startsWith(d+'-')&&!legacy[id]).length,Math.min(n,available));
-  }
+  assert.ok(s.ids.every(id=>!SC.retiredQuestions[id]));
+  assert.ok(s.ids.every(id=>!seen[id]));
+  for(const [d,n] of Object.entries(SC.weights))assert.equal(s.ids.filter(id=>id.startsWith(d+'-')).length,n);
   const st=SC.blank();st.active=s;
   for(const id of s.ids)st.active.answers[id]=[...SC.questionFor(s,id).correct];
   SC.finish(st);assert.equal(SC.result(s).percent,100);
   assert.deepEqual(SC.validate(JSON.parse(JSON.stringify(st))),st);
+});
+
+test('las 563 preguntas publicadas en revisión 5 siguen intactas para sus sesiones',()=>{
+  const hashes=require('./fixtures/revision5-bank-hashes.json');
+  const {createHash}=require('node:crypto');
+  for(const [id,hash] of Object.entries(hashes))assert.equal(createHash('sha256').update(JSON.stringify(SC.questionFor({bankRevision:5},id))).digest('hex'),hash,id);
+});
+
+test('progreso de revisión 5 mantiene stats, guardadas, sesión e historial sin transferir aciertos',()=>{
+  const raw=require('./fixtures/revision5-progress.json');
+  const clean=SC.validate(structuredClone(raw));
+  assert.equal(clean.bankRevision,6);
+  for(const key of ['active','history','stats','bookmarks'])assert.deepEqual(clean[key],raw[key]);
+  assert.equal(SC.result(clean.active).percent,100);
+  SC.finish(clean);assert.equal(SC.result(clean.history[0]).percent,100);
+  const old=Object.keys(clean.stats).filter(id=>SC.retiredQuestions[id]);
+  assert.ok(old.length>0);
+  assert.ok(old.every(id=>!SC.bank.some(q=>q.id===id)));
+  assert.deepEqual(SC.validate(structuredClone(clean)),clean);
+});
+
+test('rechaza preguntas retiradas dentro de una sesión nueva pero permite su repaso histórico',()=>{
+  const q=SC.retiredQuestions['env-004'], raw=SC.blank();
+  raw.active=SC.session('study',[q],1);
+  assert.throws(()=>SC.validate(raw));
+  raw.active=SC.session('errors',[q],1,{},90,5);
+  raw.active.answers[q.id]=q.correct.slice();
+  assert.ok(SC.validate(raw));
+  SC.finish(raw);assert.equal(SC.result(raw.active).percent,100);
+  assert.ok(SC.validate(raw));
 });

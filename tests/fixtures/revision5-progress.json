@@ -1,0 +1,184 @@
+{
+  "version": 1,
+  "bankRevision": 5,
+  "stats": {
+    "env-216": {
+      "seen": 1,
+      "right": 1,
+      "lastCorrect": true
+    },
+    "hunt-081": {
+      "seen": 1,
+      "right": 1,
+      "lastCorrect": true
+    },
+    "env-004": {
+      "seen": 1,
+      "right": 1,
+      "lastCorrect": true
+    },
+    "hunt-115": {
+      "seen": 1,
+      "right": 1,
+      "lastCorrect": true
+    },
+    "response-022": {
+      "seen": 1,
+      "right": 1,
+      "lastCorrect": true
+    }
+  },
+  "bookmarks": [
+    "env-216",
+    "hunt-081",
+    "env-004",
+    "hunt-115",
+    "response-022"
+  ],
+  "history": [
+    {
+      "id": "revision5-completed",
+      "bankRevision": 5,
+      "mode": "study",
+      "started": 1791837003645,
+      "deadline": null,
+      "index": 0,
+      "ids": [
+        "env-216",
+        "hunt-081",
+        "env-004",
+        "hunt-115",
+        "response-022"
+      ],
+      "orders": {
+        "env-216": [
+          2,
+          1,
+          0,
+          3
+        ],
+        "hunt-081": [
+          3,
+          2,
+          1,
+          0
+        ],
+        "env-004": [
+          3,
+          2,
+          1,
+          0
+        ],
+        "hunt-115": [
+          1,
+          2,
+          0,
+          3
+        ],
+        "response-022": [
+          0,
+          3,
+          1,
+          2
+        ]
+      },
+      "answers": {
+        "env-216": [
+          0,
+          1
+        ],
+        "hunt-081": [
+          0
+        ],
+        "env-004": [
+          0,
+          1
+        ],
+        "hunt-115": [
+          0
+        ],
+        "response-022": [
+          0
+        ]
+      },
+      "checked": [
+        "env-216",
+        "hunt-081",
+        "env-004",
+        "hunt-115",
+        "response-022"
+      ],
+      "flagged": [],
+      "finished": 1791837003646
+    }
+  ],
+  "active": {
+    "id": "0c2e2a71-7d8b-4d22-8452-10067b7d21cb",
+    "bankRevision": 5,
+    "mode": "study",
+    "started": 1791837003645,
+    "deadline": null,
+    "index": 0,
+    "ids": [
+      "env-216",
+      "hunt-081",
+      "env-004",
+      "hunt-115",
+      "response-022"
+    ],
+    "orders": {
+      "env-216": [
+        2,
+        1,
+        0,
+        3
+      ],
+      "hunt-081": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "env-004": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "hunt-115": [
+        1,
+        2,
+        0,
+        3
+      ],
+      "response-022": [
+        0,
+        3,
+        1,
+        2
+      ]
+    },
+    "answers": {
+      "env-216": [
+        0,
+        1
+      ],
+      "hunt-081": [
+        0
+      ],
+      "env-004": [
+        0,
+        1
+      ],
+      "hunt-115": [
+        0
+      ],
+      "response-022": [
+        0
+      ]
+    },
+    "checked": [],
+    "flagged": [],
+    "finished": null
+  }
+}

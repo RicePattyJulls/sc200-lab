@@ -1,5 +1,7 @@
 # Revisión 5 · 12 de octubre de 2026
 
+Registro histórico. La [revisión 6](REVISION-6.md) sustituye el banco activo por preguntas originales basadas solo en apuntes; los recuentos de este documento describen la ampliación anterior.
+
 Actualización local con **63 preguntas nuevas y 7 aclaraciones**: el banco pasa de 500 a **563**, y de 50 a **66 temas**. Se leyó completo el documento privado `SC-200.md` (2810 líneas), se comparó con las 500 preguntas activas y se revisaron selección, puntuación, almacenamiento, importación, versiones históricas y presentación antes de editar.
 
 La única fuente de los cambios de contenido fue ese documento. No se navegó por internet ni se consultaron sus enlaces. Las referencias externas del banco anterior se conservan como registro histórico, sin una nueva verificación externa. Esta revisión no certifica vigencia oficial del contenido ni convierte automáticamente todas las preguntas históricas en preguntas trazadas a esta versión del documento.

@@ -3,7 +3,7 @@
   const bank = [], groups = [];
   const domains = {env: 'Gestión del entorno SecOps', response: 'Respuesta a incidentes', hunt: 'Threat hunting'};
   const weights = {env: 21, response: 19, hunt: 10};
-  const bankRevision = 5;
+  const bankRevision = 6;
   // Each archived original has a revision cutoff, so revision 2 sessions do not revert to revision 1.
   // Any revision ever published is valid; only a future revision is rejected.
   const knownRevision = v => Number.isInteger(v) && v >= 1 && v <= bankRevision;
@@ -18,7 +18,7 @@
     return root.SC.questionVersions?.[id]?.find(v => revision < v.beforeRevision)?.question;
   }
   function questionFor(s, id) {
-    return previousQuestion(s, id) || bank.find(q => q.id === id);
+    return previousQuestion(s, id) || bank.find(q => q.id === id) || root.SC.retiredQuestions?.[id];
   }
   // Compact authoring format: prompt | correct answer(s) | distractors | explanation.
   // Multiple correct answers are separated by §; displayed options are always shuffled.
@@ -44,10 +44,10 @@
     // Prefer unseen questions without fixing their ordering across attempts.
     return shuffle(pool).sort((a, b) => (stats[a.id]?.seen || 0) - (stats[b.id]?.seen || 0)).slice(0, n);
   }
-  function session(mode, pool, count, stats = {}, minutes = 90) {
+  function session(mode, pool, count, stats = {}, minutes = 90, revision = bankRevision) {
     const questions = mode === 'exam' ? shuffle(Object.entries(weights).flatMap(([d,n]) => sample(bank.filter(q => q.domain === d), n, stats))) : sample(pool, count, stats);
     if (!questions.length) throw Error('No hay preguntas para estos filtros.');
-    return {id: (globalThis.crypto?.randomUUID?.() || Date.now() + '-' + Math.random()), bankRevision, mode, started: Date.now(), deadline: mode === 'exam' ? Date.now() + minutes * 60000 : null, index: 0, ids: questions.map(q => q.id), orders: Object.fromEntries(questions.map(q => [q.id, shuffle(q.choices.map((_, i) => i))])), answers: {}, checked: [], flagged: [], finished: null};
+    return {id: (globalThis.crypto?.randomUUID?.() || Date.now() + '-' + Math.random()), bankRevision: mode === 'exam' ? bankRevision : revision, mode, started: Date.now(), deadline: mode === 'exam' ? Date.now() + minutes * 60000 : null, index: 0, ids: questions.map(q => q.id), orders: Object.fromEntries(questions.map(q => [q.id, shuffle(q.choices.map((_, i) => i))])), answers: {}, checked: [], flagged: [], finished: null};
   }
   const blank = () => ({version: 1, bankRevision, stats: {}, bookmarks: [], history: [], active: null});
   function result(s) {
@@ -59,7 +59,7 @@
   function record(state, s, id) {
     if (s.checked.includes(id)) return;
     if (replacedQuestion(s, id)) {s.checked.push(id); return;}
-    const q = bank.find(q => q.id === id), old = state.stats[id] || {seen: 0, right: 0};
+    const q = questionFor(s, id), old = state.stats[id] || {seen: 0, right: 0};
     const good = correct(q, s.answers[id]);
     state.stats[id] = {seen: old.seen + 1, right: old.right + +good, lastCorrect: good};
     s.checked.push(id);
@@ -74,11 +74,14 @@
   function validate(raw) {
     const fail = () => {throw Error('El archivo no es una copia válida de SC-200 Lab.');};
     if (!raw || raw.version !== 1 || !raw.stats || typeof raw.stats !== 'object' || Array.isArray(raw.stats) || !Array.isArray(raw.bookmarks) || !Array.isArray(raw.history)) fail();
-    const ids = new Set(bank.map(q => q.id)), qs = new Map(bank.map(q => [q.id, q]));
+    const activeIds = new Set(bank.map(q => q.id));
+    const qs = new Map([...Object.values(root.SC.retiredQuestions || {}), ...bank].map(q => [q.id, q]));
+    const ids = new Set(qs.keys());
     const list = (v, allowed = ids) => Array.isArray(v) && new Set(v).size === v.length && v.every(x => allowed.has(x));
     const nat = n => Number.isSafeInteger(n) && n >= 0 && n < 1e9;
     const validSession = s => {
       if (s && s.bankRevision !== undefined && !knownRevision(s.bankRevision)) return false;
+      if (s && (s.bankRevision || 1) >= 6 && Array.isArray(s.ids) && s.ids.some(id => !activeIds.has(id))) return false;
       if (!s || typeof s.id !== 'string' || s.id.length > 100 || !['exam','study','errors','bookmarks'].includes(s.mode) || !list(s.ids) || !s.ids.length || !nat(s.index) || s.index >= s.ids.length || !Number.isFinite(s.started) || !(s.deadline === null || Number.isFinite(s.deadline)) || !(s.finished === null || Number.isFinite(s.finished))) return false;
       if (!list(s.checked, new Set(s.ids)) || !list(s.flagged, new Set(s.ids)) || !s.answers || !s.orders) return false;
       if (s.mode === 'exam' && (!s.deadline || s.ids.length !== 50 || Object.entries(weights).some(([d,n]) => s.ids.filter(id => qs.get(id).domain === d).length !== n))) return false;

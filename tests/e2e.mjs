@@ -49,13 +49,13 @@ try {
   const page = await ctx.newPage();
   await navigate(page);
   await contains(page.locator('h1'), 'Entiende la decisión');
-  assert.equal(await page.evaluate(() => SC.bank.length), 563);
+  assert.equal(await page.evaluate(() => SC.bank.length), 176);
   await screenshot(page, 'desktop-home');
 
   const legacyCtx = await context(), legacy = await legacyCtx.newPage();
   await navigate(legacy);
   await legacy.evaluate(() => {
-    const q = SC.bank.find(q => q.id === 'hunt-067'), raw = SC.blank();
+    const q = SC.retiredQuestions['hunt-067'], raw = SC.blank();
     delete raw.bankRevision;
     raw.active = SC.session('study', [q], 1); delete raw.active.bankRevision;
     raw.active.answers[q.id] = [0]; raw.stats[q.id] = {seen:1,right:1,lastCorrect:true};
@@ -66,18 +66,19 @@ try {
   await contains(legacy.locator('.question'), 'consumo de ingesta');
   await legacy.locator('[data-action=check]').click();
   await contains(legacy.locator('.feedback'), 'Usage');
+  await contains(legacy.locator('.info').first(), 'banco anterior');
   assert.equal((await stored(legacy)).stats['hunt-067'], undefined);
-  await navigate(legacy, '#bank');
+  await navigate(legacy, '#archive');
   await legacy.locator('#search').fill('hunt-067');
   await contains(legacy.locator('.bank-item'), 'dispositivo origen');
   await legacyCtx.close();
   console.log('PASS: home and archived legacy question');
 
   await navigate(page, '#study/env');
-  await page.locator('#topic').selectOption('Roles y alcance');
+  await page.locator('#topic').selectOption('Permisos combinados y scopes');
   await page.locator('#count').selectOption('10');
   await page.locator('[data-action=start-study]').click();
-  let index = (await stored(page)).active.ids.indexOf('env-004');
+  let index = (await stored(page)).active.ids.indexOf('env-216');
   await page.locator(`[data-action=jump][data-index="${index}"]`).click();
   await page.locator('input[name=answer][value="0"]').check();
   assert.ok(await page.locator('[data-action=check]').isDisabled());
@@ -88,15 +89,15 @@ try {
   await page.locator('[data-action=flag]').click();
   await page.reload();
   await contains(page.locator('.feedback'), 'Correcto');
-  assert.equal((await stored(page)).stats['env-004'].seen, 1);
-  assert.ok((await stored(page)).bookmarks.includes('env-004'));
+  assert.equal((await stored(page)).stats['env-216'].seen, 1);
+  assert.ok((await stored(page)).bookmarks.includes('env-216'));
   await screenshot(page, 'desktop-feedback');
-  index = (await stored(page)).active.ids.indexOf('env-001');
+  index = (await stored(page)).active.ids.indexOf('env-215');
   await page.locator(`[data-action=jump][data-index="${index}"]`).click();
   await page.locator('input[name=answer][value="1"]').check();
   await page.locator('[data-action=check]').click();
   await count(page.locator('.feedback.wrong'), 1);
-  await page.locator('[data-action=finish]').click();
+  await page.getByRole('button', {name:'Terminar sesión', exact:true}).click();
   await page.locator('#dialog-ok').click();
   assert.ok((await stored(page)).history[0].finished);
   await page.locator('#only-wrong').check();
@@ -151,9 +152,9 @@ try {
   await page.locator('#search').fill('');
   await page.locator('[data-action=bank-next]').click();
   await contains(page.locator('#bank-count'), 'página 2');
-  await page.locator('#search').fill('hunt-063');
+  await page.locator('#search').fill('hunt-127');
   await page.locator('.bank-item summary').click();
-  await contains(page.locator('pre'), 'MICROSOFT.SECURITYINSIGHTS/ALERTRULES/WRITE');
+  await contains(page.locator('pre'), 'parse_json(AdditionalFields)');
   await screenshot(page, 'desktop-kql');
 
   const mobile = await context({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
@@ -168,7 +169,7 @@ try {
   assert.ok(await phone.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
   await screenshot(phone, 'mobile-quiz');
   await navigate(phone, '#coverage');
-  await count(phone.locator('.coverage-item'), 66);
+  await count(phone.locator('.coverage-item'), 21);
   assert.ok(await phone.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
 
   const restricted = await context(), noStorage = await restricted.newPage();
@@ -181,7 +182,7 @@ try {
   await local.goto(pathToFileURL(path.join(root,'index.html')).href);
   await local.waitForLoadState('networkidle');
   await contains(local.locator('h1'), 'Entiende la decisión');
-  assert.equal(await local.evaluate(() => SC.bank.length), 563);
+  assert.equal(await local.evaluate(() => SC.bank.length), 176);
   console.log('PASS: bank, mobile, blocked storage and file://');
 
   const freshCtx = await context({viewport:{width:1280,height:900}}), fresh = await freshCtx.newPage();
@@ -204,13 +205,13 @@ try {
   await count(fresh.locator('.option-reasons li'), 4);
   assert.equal((await stored(fresh)).stats['env-216'].seen, 1);
   await screenshot(fresh, 'notes-feedback');
-  await fresh.locator('[data-action=finish]').click();
+  await fresh.getByRole('button', {name:'Terminar sesión', exact:true}).click();
   await fresh.locator('#dialog-ok').click();
   await fresh.locator('.review-item summary').first().click();
   await count(fresh.locator('.review-item[open] .option-reasons li'), 4);
   await navigate(fresh, '#bank');
-  const ids = await fresh.evaluate(() => SC.bank.filter(q => q.addedInRevision === 5).map(q => q.id));
-  assert.equal(ids.length, 63);
+  const ids = await fresh.evaluate(() => SC.bank.map(q => q.id));
+  assert.equal(ids.length, 176);
   for (const id of ids) {
     await fresh.locator('#search').fill(id);
     await count(fresh.locator('.bank-item'), 1);
@@ -219,11 +220,11 @@ try {
     await contains(fresh.locator('.note-sources'), 'SC-200.md');
   }
   await navigate(fresh, '#home');
-  await contains(fresh.locator('.stat').first(), '563');
+  await contains(fresh.locator('.stat').first(), '176');
   await fresh.locator('[data-action=start-exam]').click();
   await count(fresh.locator('.option-review'), 0);
   await count(fresh.locator('.note-sources'), 0);
-  console.log('PASS: all 63 new questions, explanations and source references');
+  console.log('PASS: all 176 active questions, explanations and source references');
 
   const oldCtx = await context(), oldPage = await oldCtx.newPage();
   await navigate(oldPage, '#settings');
@@ -243,6 +244,42 @@ try {
   await navigate(oldPage, '#history');
   await oldPage.getByRole('link', {name:'Ver respuestas'}).first().click();
   await contains(oldPage.locator('.score-ring'), '100%');
+  await navigate(oldPage, '#home');
+  await contains(oldPage.locator('.stat').nth(1), '0');
+  await navigate(oldPage, '#bank');
+  await oldPage.locator('#search').fill('hunt-081');
+  await contains(oldPage.locator('#bank-count'), '0 preguntas');
+  await navigate(oldPage, '#archive');
+  await oldPage.locator('#archive-bookmarks').check();
+  await contains(oldPage.locator('#bank-count'), `${raw.bookmarks.length} preguntas`);
+  await oldPage.locator('#search').fill('hunt-081');
+  await count(oldPage.locator('.bank-item'), 1);
+  await navigate(oldPage, '#settings');
+  await contains(oldPage.locator('.settings-card').first(), 'Progreso del banco anterior');
+
+  // Revision 5 export remains valid, including a retry of retired questions.
+  const raw5 = JSON.parse(await readFile(path.join(root,'tests/fixtures/revision5-progress.json'),'utf8'));
+  raw5.active = null;
+  raw5.history[0].answers['env-004'] = [2];
+  await oldPage.locator('#import-file').setInputFiles({name:'old5.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(raw5))});
+  await oldPage.locator('#dialog-ok').click();
+  assert.deepEqual((await stored(oldPage)).stats, raw5.stats);
+  await navigate(oldPage, '#history');
+  await oldPage.getByRole('link', {name:'Ver respuestas'}).first().click();
+  await oldPage.locator('[data-action=retry-session]').click();
+  await count(oldPage.locator('.question'), 1);
+  assert.deepEqual((await stored(oldPage)).active.ids, ['env-004']);
+  assert.equal((await stored(oldPage)).active.bankRevision, 5);
+  await oldPage.locator('input[name=answer][value="0"]').check();
+  await oldPage.locator('input[name=answer][value="1"]').check();
+  await oldPage.locator('[data-action=check]').click();
+  await contains(oldPage.locator('.feedback'), 'Correcto');
+  const retest = await stored(oldPage);
+  await oldPage.getByRole('button', {name:'Terminar sesión', exact:true}).click();
+  await oldPage.locator('#dialog-ok').click();
+  await contains(oldPage.locator('.score-ring'), '100%');
+  assert.equal((await stored(oldPage)).stats['env-004'].seen, retest.stats['env-004'].seen);
+
   await navigate(phone, '#bank');
   await phone.locator('#search').fill('hunt-102');
   await phone.locator('.bank-item summary').click();
@@ -252,7 +289,7 @@ try {
 
   assert.deepEqual(errors, [], 'JavaScript errors');
   assert.deepEqual(external, [], 'Unexpected external requests');
-  console.log('PASS: desktop, mobile, all 63 new questions, source references, study, multiple answers, scoring, exam, resume, deadline, export/import, revision-4 progress, legacy questions, storage failure and file://. No JavaScript errors or external requests.');
+  console.log('PASS: desktop, mobile, all 176 active questions, source references, study, multiple answers, scoring, exam, resume, deadline, export/import, revision-4 progress, legacy questions, storage failure and file://. No JavaScript errors or external requests.');
   console.log('Screenshots:', out);
 } finally {
   if (browser) await browser.close();

@@ -2,7 +2,7 @@
   "name": "sc200-lab",
   "version": "1.0.0",
   "private": true,
-  "description": "Simulacro independiente SC-200: 563 preguntas en español, sin dependencias en tiempo de ejecución.",
+  "description": "Simulacro independiente SC-200: 176 preguntas originales desde apuntes privados, sin dependencias en tiempo de ejecución.",
   "scripts": {
     "test": "node --test tests/core.test.js",
     "test:browser": "node tests/e2e.mjs",

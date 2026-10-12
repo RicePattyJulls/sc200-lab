@@ -268,3 +268,25 @@ SC.noteSections = {
     "sha256": "c072d82096305e1e5af6d5735d2350b3d6f798ce36a070abeedfb895d0910ce8"
   }
 };
+
+// Additional sections used by the complete renewal.
+Object.assign(SC.noteSections, {
+  "purview-controles": {
+    "chapter": 3,
+    "section": "3 · Protección y configuración de workloads > Microsoft Purview",
+    "lines": [
+      1075,
+      1093
+    ],
+    "sha256": "d50a29b2cd59674061429fffa0007b919c9c082ea62ec7d8730c7db2e1611f2f"
+  },
+  "secure-score": {
+    "chapter": 3,
+    "section": "3 · Protección y configuración de workloads > Microsoft Secure Score",
+    "lines": [
+      1112,
+      1124
+    ],
+    "sha256": "2d282eca17043aa7cc37313815a32b5f1420bcede4794147840a555196388ab3"
+  }
+});
